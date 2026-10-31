@@ -1,11 +1,19 @@
 # Deliverable 6: Analytical Note & Mathematical Formulation
-## Student Submission — TECH5 Collaborative Project
+## Student Submission Template — TECH5 Collaborative Project
 
-**Team:** Collaborative Project Group (Team A & Team B)  
-**Authors (Team B - Assignment Engine):** Eric Nafstad, Jørgen Johannessen  
-**Authors (Team A - Visualization & Recommender):** Alexander Johannson Skjelbred, Maria Rogdaberg, Ole-Christian Kran  
+**Team:** [Team Name / Group Number]  
+**Authors (Team B - Assignment Engine):** [Student Names & IDs]  
+**Authors (Team A - Visualization & Recommender):** [Student Names & IDs]  
 **Course:** TECH5 Programming & Application Design, NHH Norwegian School of Economics  
-**Date:** Autumn 2026 / Week 3
+**Date:** [Submission Date]
+
+---
+
+> [!IMPORTANT]
+> **Instructions for Students:**  
+> This document serves as the formal deliverable template for **Deliverable 6 (Analytical Note)** as defined in Section 15 and Section 6 of the TECH5 project specification (`projectTech5.tex`).  
+>
+> Replace all bracketed text `[...]` with your team's mathematical formulation, indicator derivations, decision criteria, and critical reflections. Maintain rigorous mathematical notation and explain how your analytical design translates directly into your Python implementation in `app/engine/solvers.py` and `app/engine/metrics.py`.
 
 ---
 
@@ -14,16 +22,12 @@
 ### 1.1 Business Context & Decision Dilemma
 *Describe the real-world allocation challenge faced by academic coordinators. Discuss the inherent conflict between collective project quality (skill matching) and individual student satisfaction (preference rank).*
 
-In experiential learning and project-based university courses, study coordinators face a complex assignment challenge: matching a heterogeneous cohort of students to a finite set of client-sponsored semester projects under operational and pedagogical constraints. Each student expresses personal motivation through an ordinal ranking over available projects. Simultaneously, project sponsors require student teams with complementary technical proficiencies across specific skills (e.g., Python, data engineering, machine learning) to ensure successful project execution. As emphasized by Rezaeinia et al. (2022) in their analysis of multi-criteria student-project allocations, this setting creates a fundamental trade-off between individual student satisfaction (minimizing preference rank regret) and collective project delivery quality (maximizing skill coverage).
-
-When capacities and mandatory skill requirements are tight, optimizing exclusively for student satisfaction often produces project teams that lack critical technical proficiencies. Conversely, prioritizing technical competence alone risks allocating students to low-ranked or unranked projects, damaging motivation and cohort morale. Compounding this dilemma, coordinators must enforce administrative fixed pre-allocations (locks) and ensure fairness across the cohort, preventing outcomes where a few students achieve their top preferences at the expense of others experiencing extreme dissatisfaction. A decision support system must therefore generate transparent, distinct alternative schedules that make these trade-offs explicit and quantifiable.
+[Provide a 1–2 paragraph summary of the problem, referencing Rezaeinia et al. (2022) for context without copying their proprietary algorithm.]
 
 ### 1.2 Chosen Assignment Methodology & Academic Justification
 *Identify your approved assignment methodology (e.g., Integer Linear Programming with PuLP/CBC, stable matching variant, heuristic search, or bipartite min-cost flow).*
 
-We formulate the assignment problem as a multi-objective Integer Linear Program (ILP) with 0-1 binary decision variables ($x_{s,p} \in \{0, 1\}$), solved to provable global optimality using the branch-and-cut solver CBC via Python's `PuLP` library. ILP provides exact, deterministic solutions and rigorous certificates of mathematical infeasibility when constraints cannot be satisfied, eliminating the unpredictable variation and local-optima traps associated with heuristic algorithms.
-
-For academic cohorts typical of semester courses ($n = 10 \text{ to } 100$ students, $m = 4 \text{ to } 20$ projects), the formulation comprises $n \times m$ binary assignment variables and modest linear constraints (exact assignment, capacity bounds, fixed pre-allocations, and mandatory skill coverage). Modern branch-and-cut algorithms resolve these structured instances in milliseconds to seconds. This computational efficiency guarantees interactive response times within a single-process Python web application, facilitating real-time re-solving upon administrative parameter modifications, interactive fixed-assignment pinning, and sequential generation of distinct Pareto alternatives via no-good integer cuts without requiring distributed computing infrastructure.
+[State your chosen method, explain why it is appropriate for this problem scale, and justify its computational feasibility within a single-process Python application.]
 
 ---
 
@@ -39,6 +43,7 @@ Define the primary index sets used throughout your mathematical model:
 - $K_p^{M} = \{k \in K_p : m_{p,k} = 1\} \subseteq K_p$: Set of skills that are mandatory for project $p$.
 - $Q_{p,k} = \{s \in S : \text{skill}_{s,k} \ge \text{req}_{p,k}\}$: Set of students who meet project $p$'s requirement for skill $k \in K_p$.
 - $\mathcal{A} = \{A^{(1)}, \dots, A^{(t)}\}$: List of previously found allocations, where each $A^{(i)} = \{(s,p) \in S \times P : x^{(i)}_{s,p} = 1\}$ contains exactly $|S|$ pairs. It starts empty and grows by one allocation per solve.
+- *[Define any additional sets your model introduces]*
 
 ### 2.2 Model Parameters
 Formally define all input parameters, units, and ranges:
