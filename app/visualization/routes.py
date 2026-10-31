@@ -13,7 +13,6 @@ from typing import Any
 import flask
 
 from app.contract import contract
-from app.contract import mocks
 from app.domain import models
 from app.engine import recommendations
 from app.engine import solvers
@@ -998,8 +997,7 @@ def compare_solutions() -> Any:
 
     Extracts 'sol1' and 'sol2' query parameters representing solution IDs,
     retrieves their domain records, and executes a trade-off comparison
-    via the AssignmentEngine contract. Falls back gracefully to the
-    MockAssignmentEngine if the production solver is unimplemented.
+    via the AssignmentEngine contract.
 
     Returns:
         Rendered HTML template comparing the two allocation solutions.
