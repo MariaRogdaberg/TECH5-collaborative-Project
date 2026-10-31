@@ -62,14 +62,10 @@ def test_full_lifecycle_integration(tmp_path: pathlib.Path) -> None:
     assert b"Policy Advice" in rec_view.data
 
     # Step 6: Component A renders side-by-side solution comparison via Engine
-    try:
-        comp_view = client.get(f"/compare?sol1={sol1_id}&sol2={sol2_id}")
-        assert comp_view.status_code == 200
-        assert b"Side-by-Side Solution Comparison" in comp_view.data
-        assert b"Trade-off Findings" in comp_view.data
-    except NotImplementedError:
-        # Expected in Starter Carcass pending Team A compare implementation
-        pass
+    comp_view = client.get(f"/compare?sol1={sol1_id}&sol2={sol2_id}")
+    assert comp_view.status_code == 200
+    assert b"Side-by-Side Solution Comparison" in comp_view.data
+    assert b"Trade-off Findings" in comp_view.data
 
     # Step 7: Introduce Fixed Assignment (lock S02 to P2) and trigger rerun
     lock_res = client.post(
@@ -142,3 +138,78 @@ def test_infeasible_cohort_integration(tmp_path: pathlib.Path) -> None:
     assert len(runs) == 1
     assert runs[0].status == "INFEASIBLE"
     assert runs[0].diagnostics
+
+
+def test_fixed_assignment_scenario_integration(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Tests loading and solving benchmark Scenario 2 with locked S02->P2."""
+    db_file = tmp_path / "test_fixed_scenario.db"
+    app = create_app({"TESTING": True, "DATABASE_PATH": db_file})
+    client = app.test_client()
+
+    # Load Scenario 2
+    load_res = client.post("/load-scenario/fixed", follow_redirects=True)
+    assert load_res.status_code == 200
+    assert b"Fixed Assignment" in load_res.data
+
+    # Trigger optimization run
+    run_res = client.post(
+        "/runs/trigger",
+        data={"primary_strategy": "PREFERENCE", "max_alternatives": 2},
+        follow_redirects=True,
+    )
+    assert run_res.status_code == 200
+    assert b"Optimization run completed" in run_res.data
+
+    # Verify that S02 is assigned to P2 and marked as fixed
+    engine: contract.AssignmentEngineContract = solvers.AssignmentEngine()
+    runs = engine.list_runs(limit=1)
+    assert len(runs) == 1
+    assert runs[0].status == "COMPLETED"
+    run = engine.get_run(runs[0].id)
+    assert run is not None
+    for sol in run.solutions:
+        matching = [a for a in sol.assignments if a.student_id == "S02"]
+        assert len(matching) == 1
+        assert matching[0].project_id == "P2"
+        assert matching[0].is_fixed
+
+
+def test_contradictory_scenario_integration(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Tests loading and safe rejection of benchmark Scenario 4 (contradictory locks)."""
+    db_file = tmp_path / "test_contradictory_scenario.db"
+    app = create_app({"TESTING": True, "DATABASE_PATH": db_file})
+    client = app.test_client()
+
+    # Load Scenario 4 (4 students locked to P1 with max capacity 3)
+    load_res = client.post(
+        "/load-scenario/conflicting", follow_redirects=True
+    )
+    assert load_res.status_code == 200
+    assert b"Contradictory" in load_res.data
+
+    # Attempt to trigger optimization run
+    run_res = client.post(
+        "/runs/trigger",
+        data={"primary_strategy": "PREFERENCE", "max_alternatives": 2},
+        follow_redirects=True,
+    )
+    assert run_res.status_code == 200
+    # Must report validation failure or infeasibility without crashing
+    assert (
+        b"Validation failed" in run_res.data
+        or b"exceed" in run_res.data
+        or b"capacity" in run_res.data
+        or b"infeasible" in run_res.data
+    )
+
+    # Check that invalid/infeasible run was recorded safely
+    engine: contract.AssignmentEngineContract = solvers.AssignmentEngine()
+    runs = engine.list_runs(limit=1)
+    if runs:
+        assert runs[0].status in ("INFEASIBLE", "INVALID_INPUT", "FAILED")
+        assert runs[0].diagnostics
+
