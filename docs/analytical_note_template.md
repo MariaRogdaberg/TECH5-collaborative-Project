@@ -2,8 +2,8 @@
 ## Student Submission Template — TECH5 Collaborative Project
 
 **Team:** [Team Name / Group Number]  
-**Authors (Team B - Assignment Engine):** [Student Names & IDs]  
-**Authors (Team A - Visualization & Recommender):** [Student Names & IDs]  
+**Authors (Team B - Assignment Engine):** Aksel Søraas (s242464), Jørgen Johannessen (s242465), Eric Nafstad (s242476)  
+**Authors (Team A - Visualization & Recommender):** Alexander Johannson Skjelbred (s242479), Maria Rogdaberg (s242483), Ole-Christian Kran (s242478)  
 **Course:** TECH5 Programming & Application Design, NHH Norwegian School of Economics  
 **Date:** [Submission Date]
 
@@ -22,12 +22,14 @@
 ### 1.1 Business Context & Decision Dilemma
 *Describe the real-world allocation challenge faced by academic coordinators. Discuss the inherent conflict between collective project quality (skill matching) and individual student satisfaction (preference rank).*
 
-[Provide a 1–2 paragraph summary of the problem, referencing Rezaeinia et al. (2022) for context without copying their proprietary algorithm.]
+Each semester, academic coordinators must assign a cohort of students to business projects proposed by corporate and social partners. This is the setting of the CEMS Business Projects at NHH. Every student ranks the projects they prefer and declares proficiency in a set of skills on a 1–5 scale. Each project has a minimum and maximum team size and may require certain skills, some of them mandatory. In addition, coordinators sometimes fix a student to a specific project in advance, for example because of a prior agreement with a partner. A valid allocation must respect all of these rules at once. Even for a modest cohort, the number of possible allocations is far too large to search by hand.
+
+The core dilemma is that the coordinator serves two groups whose interests conflict. Partners want teams with the skills to deliver high-quality work, which favours assigning students by skill fit. Students want projects they actually ranked highly, which favours assigning by preference. Popular projects cannot take everyone who wants them, so improving one student's outcome often worsens another's. A purely efficient allocation can also concentrate disappointment on a few students. Rezaeinia et al. (2022) study this setting and show that efficiency and fairness criteria lead to different allocations. A decision-maker therefore needs to see the trade-off explicitly rather than accept a single "best" answer. Our system is designed to make that trade-off visible: it generates alternative allocations under different priorities and reports skill fit, preference satisfaction and fairness side by side.
 
 ### 1.2 Chosen Assignment Methodology & Academic Justification
 *Identify your approved assignment methodology (e.g., Integer Linear Programming with PuLP/CBC, stable matching variant, heuristic search, or bipartite min-cost flow).*
 
-[State your chosen method, explain why it is appropriate for this problem scale, and justify its computational feasibility within a single-process Python application.]
+We use Integer Linear Programming (ILP), implemented in Python with PuLP and the bundled CBC solver. Our three strategies (preference, skill fit and balanced) share constraints and differ only in what they maximise. ILP fits the problem because it handles all the hard constraints exactly, always finds the best allocation for the chosen objective, and can prove when no valid allocation exists. It also makes it easy to generate distinct alternatives: after each solution, we add a constraint that rules it out and solve again. The problem is small enough to solve quickly within a single-process Python application.
 
 ---
 
@@ -43,7 +45,6 @@ Define the primary index sets used throughout your mathematical model:
 - $K_p^{M} = \{k \in K_p : m_{p,k} = 1\} \subseteq K_p$: Set of skills that are mandatory for project $p$.
 - $Q_{p,k} = \{s \in S : \text{skill}_{s,k} \ge \text{req}_{p,k}\}$: Set of students who meet project $p$'s requirement for skill $k \in K_p$.
 - $\mathcal{A} = \{A^{(1)}, \dots, A^{(t)}\}$: List of previously found allocations, where each $A^{(i)} = \{(s,p) \in S \times P : x^{(i)}_{s,p} = 1\}$ contains exactly $|S|$ pairs. It starts empty and grows by one allocation per solve.
-- *[Define any additional sets your model introduces]*
 
 ### 2.2 Model Parameters
 Formally define all input parameters, units, and ranges:

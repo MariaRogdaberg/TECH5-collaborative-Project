@@ -797,7 +797,11 @@ def trigger_run() -> flask.Response:
         flask.flash("Permission denied for current role.", "danger")
         return flask.redirect(flask.url_for("visualization_web.dashboard"))
 
-    max_alts = int(flask.request.form.get("max_alternatives", 3))
+    try:
+        max_alts = int(flask.request.form.get("max_alternatives", 3) or 3)
+    except (ValueError, TypeError):
+        max_alts = 3
+    max_alts = max(1, max_alts)
     strat = flask.request.form.get("primary_strategy", "PREFERENCE")
 
     students = repositories.StudentRepository().list_all()
