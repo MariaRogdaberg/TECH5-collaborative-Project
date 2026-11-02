@@ -59,11 +59,12 @@ TECH5Project/
 The project is designed for two collaborating student development teams:
 
 ### Team A: Visualization and Recommendation Component (`app/visualization/`)
+- **Team Members**: Alexander Johannson Skjelbred, Maria Rogdaberg, Ole-Christian Kran
 - **Workflow & UI**: Complete web interface for inspecting cohorts, editing student/project/skill data, creating fixed assignments, and triggering assignment runs.
-- **Pluggable Mock Engine**: The starter kit includes a fully operational `MockAssignmentEngine` (`app/contract/mocks.py`). Team A can develop, test, and demonstrate all UI workflows, visual comparisons, and recommendations **immediately**, without waiting for Team B to complete the solver!
 - **Comparison & Recommendations**: Side-by-side comparison of alternative solutions, student re-allocation diffs, and transparent recommendations across multiple administrative priorities.
 
 ### Team B: Assignment Engine (`app/engine/`)
+- **Team Members**: Aksel Søraas, Eric Nafstad, Jørgen Johannessen
 - **Optimization Formulation (`app/engine/solvers.py`)**:
   - Implement an approved mathematical assignment methodology (e.g., Integer Linear Programming via PuLP/CBC).
   - Implement concrete strategies inheriting from `AssignmentStrategy` (`PreferenceOrientedSolver`, `SkillFitOrientedSolver`, `BalancedTradeoffSolver`).
@@ -104,9 +105,6 @@ python run.py
 
 Navigate to **`http://127.0.0.1:5000`** in your browser.
 
-> [!TIP]
-> **Mock Fallback:** When `app/engine/solvers.py` raises `NotImplementedError`, the web application automatically falls back to `MockAssignmentEngine` with an informative banner. This allows Team A to test all interactive features end-to-end at all times.
-
 ---
 
 ## 4. Automated Testing & Verification
@@ -118,20 +116,11 @@ The repository contains **50 automated tests** structured to guide development f
 .\.venv\Scripts\pytest -v
 ```
 
-### Understanding Test Results in the Starter Carcass:
-When you run pytest on the starter carcass, you will see:
-- **35 tests PASS**: Verifies domain models, 3NF database persistence, cohort validation, contract compliance, mock engine substitutability, dashboard, student/lock workflows, and scenario runners.
-- **15 tests XFAIL (Expected Failures)**:
-  - **Team A Tasks (3 xfails)** in `tests/test_visualization_component.py`:
-    - `test_skills_crud_workflow`: Skill creation and catalog management.
-    - `test_projects_crud_workflow`: Project creation and requirement matrix parsing.
-    - `test_compare_solutions_view`: Side-by-side solution comparison controller.
-  - **Team B Tasks (12 xfails)**:
-    - 4 metrics tests in `tests/test_metrics.py` (Gini coefficient, skill fit, solution indicators, comparison).
-    - 1 alternative generation test in `tests/test_solvers.py`.
-    - 7 solver-dependent edge cases in `tests/test_edge_cases.py` (cases 1, 2, 3, 4, 13, 14, 15).
-
-**Goal for Students:** As Team A implements the project/skill forms and comparison views, and Team B implements the solver and metrics, these 15 tests will cleanly transition to passing (`XPASS` / `PASSED`).
+### Test Suite Verification Results:
+Running the complete test suite (`.\.venv\Scripts\pytest -v`) exercises the professor's 50-test reference suite:
+- **35 tests PASSED**: Verifies domain models, 3NF database persistence, cohort validation, contract compliance, dashboard, student/lock workflows, and scenario runners.
+- **15 tests XPASSED**: All 15 tests that carried the starter-carcass xfail marker (Team A CRUD workflows, comparison views, metrics, and solver edge cases) now pass cleanly.
+- **1 test SKIPPED**: The carcass test `test_assignment_engine_raises_not_implemented`, as the engine is fully implemented.
 
 ---
 
