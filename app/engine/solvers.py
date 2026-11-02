@@ -222,6 +222,7 @@ class AssignmentStrategy(abc.ABC):
             "num_constraints": model.numConstraints(),
             "max_preferences": max_preferences,
             "epsilon": self.epsilon,
+            "excluded_solutions": len(excluded_solutions or []),
         }
         if model.status != pulp.LpStatusOptimal:
             return status, [], None, diagnostics
@@ -339,6 +340,50 @@ class SkillFitOrientedSolver(AssignmentStrategy):
         return fit + self.epsilon * normalized_pref
 
 
+class BalancedTradeoffSolver(AssignmentStrategy):
+    """Strategy 3: weighted compromise between preference and skill fit.
+
+    Objective (Section 2.5): lambda * sum w~ x + (1 - lambda) * sum sigma x.
+    """
+
+    def __init__(self, preference_weight: float = 0.5) -> None:
+        """Initializes the balanced strategy.
+
+        Args:
+            preference_weight: lambda in [0, 1], the weight on normalized
+                preference satisfaction; skill fit receives 1 - lambda.
+
+        Raises:
+            ValueError: If preference_weight lies outside [0, 1].
+        """
+        if not 0.0 <= preference_weight <= 1.0:
+            raise ValueError("preference_weight (lambda) must lie in [0, 1].")
+        super().__init__(
+            name="BALANCED",
+            description=(
+                "Maximizes a weighted sum of normalized preference "
+                "satisfaction and skill fit."
+            ),
+        )
+        self.preference_weight = preference_weight
+
+    def calculate_cost_or_utility(
+        self,
+        student: models.Student,
+        project: models.Project,
+        max_preferences: int,
+    ) -> float:
+        """Returns lambda * w~_{s,p} + (1 - lambda) * sigma_{s,p}."""
+        fit, _ = metrics.calculate_assignment_skill_fit(student, project)
+        normalized_pref = (
+            _borda_score(student, project, max_preferences) / max_preferences
+        )
+        return (
+            self.preference_weight * normalized_pref
+            + (1.0 - self.preference_weight) * fit
+        )
+
+
 class AssignmentEngine(contract.AssignmentEngineContract):
     """Main Assignment Engine orchestrating validation, execution, and persistence.
 
@@ -362,6 +407,7 @@ class AssignmentEngine(contract.AssignmentEngineContract):
             for strategy in (
                 PreferenceOrientedSolver(),
                 SkillFitOrientedSolver(),
+                BalancedTradeoffSolver(),
             )
         }
 
@@ -403,9 +449,12 @@ class AssignmentEngine(contract.AssignmentEngineContract):
         5. Persist run and solutions via self.run_repo.
         6. Return populated models.AssignmentRun.
 
-        Alternatives come from re-solving the selected strategy with a no-good
-        cut against every earlier solution, so they are always distinct. Bad
-        input never raises: it is reported through the run status
+        Alternatives cycle through the registered strategies, starting with
+        the selected one, so the trade-off between strategies is visible in a
+        single run. Every solve carries a no-good cut against all earlier
+        solutions, so alternatives are always distinct; a later strategy may
+        therefore return its best solution that differs from earlier ones.
+        Bad input never raises: it is reported through the run status
         (INVALID_INPUT, INFEASIBLE or FAILED) and the run diagnostics.
 
         Args:
@@ -484,13 +533,17 @@ class AssignmentEngine(contract.AssignmentEngineContract):
             )
 
         max_alternatives = max(1, request.max_alternatives)
+        strategy_order = [strategy] + [
+            s for s in self.strategies.values() if s is not strategy
+        ]
         solutions: list[models.Solution] = []
         excluded: list[list[tuple[str, str]]] = []
         statuses: list[str] = []
         last_diag: dict[str, Any] = {}
         total_time = 0.0
         for alt_number in range(1, max_alternatives + 1):
-            status, assignments, objective, last_diag = strategy.solve(
+            current = strategy_order[(alt_number - 1) % len(strategy_order)]
+            status, assignments, objective, last_diag = current.solve(
                 request.students,
                 request.projects,
                 request.fixed_assignments,
@@ -512,7 +565,7 @@ class AssignmentEngine(contract.AssignmentEngineContract):
                     id=str(uuid.uuid4()),
                     run_id=run.id,
                     alternative_number=alt_number,
-                    strategy_name=strategy.name,
+                    strategy_name=current.name,
                     objective_value=(
                         round(objective, 4) if objective is not None else None
                     ),
@@ -526,6 +579,7 @@ class AssignmentEngine(contract.AssignmentEngineContract):
         diagnostics: dict[str, Any] = {
             "solver_status": statuses[0],
             "strategy": strategy.name,
+            "strategies_used": [s.strategy_name for s in solutions],
             "requested_alternatives": max_alternatives,
             "distinct_alternatives": len(solutions),
             "solution_count": len(solutions),
@@ -535,8 +589,9 @@ class AssignmentEngine(contract.AssignmentEngineContract):
         if solutions:
             run_status = contract.RunStatus.COMPLETED
             message = (
-                f"Found {len(solutions)} distinct solution(s) with strategy "
-                f"{strategy.name}."
+                f"Found {len(solutions)} distinct solution(s), starting with "
+                f"strategy {strategy.name} "
+                f"({', '.join(s.strategy_name for s in solutions)})."
             )
             if len(solutions) < max_alternatives:
                 if statuses[-1] == "Infeasible":
