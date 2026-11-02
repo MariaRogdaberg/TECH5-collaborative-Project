@@ -1,33 +1,22 @@
 # Deliverable 6: Analytical Note & Mathematical Formulation
-## Student Submission Template — TECH5 Collaborative Project
 
-**Team:** [Team Name / Group Number]  
+**Team:** Group 1 and 10
 **Authors (Team B - Assignment Engine):** Aksel Søraas (s242464), Jørgen Johannessen (s242465), Eric Nafstad (s242476)  
 **Authors (Team A - Visualization & Recommender):** Alexander Johannson Skjelbred (s242479), Maria Rogdaberg (s242483), Ole-Christian Kran (s242478)  
 **Course:** TECH5 Programming & Application Design, NHH Norwegian School of Economics  
-**Date:** [Submission Date]
-
----
-
-> [!IMPORTANT]
-> **Instructions for Students:**  
-> This document serves as the formal deliverable template for **Deliverable 6 (Analytical Note)** as defined in Section 15 and Section 6 of the TECH5 project specification (`projectTech5.tex`).  
->
-> Replace all bracketed text `[...]` with your team's mathematical formulation, indicator derivations, decision criteria, and critical reflections. Maintain rigorous mathematical notation and explain how your analytical design translates directly into your Python implementation in `app/engine/solvers.py` and `app/engine/metrics.py`.
+**Date:** 4.11.2026
 
 ---
 
 ## 1. Problem Definition & Mathematical Modeling Approach
 
 ### 1.1 Business Context & Decision Dilemma
-*Describe the real-world allocation challenge faced by academic coordinators. Discuss the inherent conflict between collective project quality (skill matching) and individual student satisfaction (preference rank).*
 
 Each semester, academic coordinators must assign a cohort of students to business projects proposed by corporate and social partners. This is the setting of the CEMS Business Projects at NHH. Every student ranks the projects they prefer and declares proficiency in a set of skills on a 1–5 scale. Each project has a minimum and maximum team size and may require certain skills, some of them mandatory. In addition, coordinators sometimes fix a student to a specific project in advance, for example because of a prior agreement with a partner. A valid allocation must respect all of these rules at once. Even for a modest cohort, the number of possible allocations is far too large to search by hand.
 
 The core dilemma is that the coordinator serves two groups whose interests conflict. Partners want teams with the skills to deliver high-quality work, which favours assigning students by skill fit. Students want projects they actually ranked highly, which favours assigning by preference. Popular projects cannot take everyone who wants them, so improving one student's outcome often worsens another's. A purely efficient allocation can also concentrate disappointment on a few students. Rezaeinia et al. (2022) study this setting and show that efficiency and fairness criteria lead to different allocations. A decision-maker therefore needs to see the trade-off explicitly rather than accept a single "best" answer. Our system is designed to make that trade-off visible: it generates alternative allocations under different priorities and reports skill fit, preference satisfaction and fairness side by side.
 
 ### 1.2 Chosen Assignment Methodology & Academic Justification
-*Identify your approved assignment methodology (e.g., Integer Linear Programming with PuLP/CBC, stable matching variant, heuristic search, or bipartite min-cost flow).*
 
 We use Integer Linear Programming (ILP), implemented in Python with PuLP and the bundled CBC solver. Our three strategies (preference, skill fit and balanced) share constraints and differ only in what they maximise. ILP fits the problem because it handles all the hard constraints exactly, always finds the best allocation for the chosen objective, and can prove when no valid allocation exists. It also makes it easy to generate distinct alternatives: after each solution, we add a constraint that rules it out and solve again. The problem is small enough to solve quickly within a single-process Python application.
 
@@ -36,7 +25,7 @@ We use Integer Linear Programming (ILP), implemented in Python with PuLP and the
 ## 2. Mathematical Formulation
 
 ### 2.1 Index Sets & Dimensions
-Define the primary index sets used throughout your mathematical model:
+
 - $S = \{s_1, s_2, \dots, s_n\}$: Set of students in the cohort ($|S| = n$).
 - $P = \{p_1, p_2, \dots, p_m\}$: Set of available semester projects ($|P| = m$).
 - $K = \{k_1, k_2, \dots, k_q\}$: Set of evaluated technical skills ($|K| = q$).
@@ -47,7 +36,7 @@ Define the primary index sets used throughout your mathematical model:
 - $\mathcal{A} = \{A^{(1)}, \dots, A^{(t)}\}$: List of previously found allocations, where each $A^{(i)} = \{(s,p) \in S \times P : x^{(i)}_{s,p} = 1\}$ contains exactly $|S|$ pairs. It starts empty and grows by one allocation per solve.
 
 ### 2.2 Model Parameters
-Formally define all input parameters, units, and ranges:
+
 - $l_p \in \mathbb{Z}_{\ge 0}$: Minimum headcount capacity for project $p$.
 - $u_p \in \mathbb{Z}_{\ge 1}$: Maximum headcount capacity for project $p$ ($l_p \le u_p$).
 - $L \in \{1, \dots, |P|\}$: Maximum number of projects a student may rank (the length of the preference list; $L = |P|$ if students rank everything).
@@ -64,16 +53,15 @@ Formally define all input parameters, units, and ranges:
   *Explanation: Each required skill contributes the fraction of the requirement the student covers, capped at 1 so that surplus proficiency does not compensate for a gap elsewhere. A project with no requirements is fully compatible with every student.*
 - $\varepsilon \in (0, \tfrac{1}{|S|+1}]$: Small tie-breaking constant used in Strategies 1 and 2.
 - $\lambda \in [0, 1]$: Weight on preference versus skill fit in Strategy 3 ($\lambda = 0.5$ by default).
-- $\mu \ge 0$: Penalty on the worst assigned rank in Strategy 1 ($\mu = 0$ switches the penalty off).
+- $\mu \ge 0$: Penalty on the worst assigned rank in Strategy 1 ($\mu = |S|$ by default; $\mu = 0$ switches the penalty off).
 
 ### 2.3 Decision Variables
-Define your optimization decision variables:
+
 - $x_{s,p} \in \{0, 1\}$: Binary decision variable equal to $1$ if student $s$ is assigned to project $p$, and $0$ otherwise.
 - $y_p \in \{0, 1\}$: Binary variable equal to $1$ if project $p$ is active (runs this semester with at least one assigned student), and $0$ if it is not offered.
 - $\rho \in \mathbb{R}_{\ge 0}$: Auxiliary variable bounding the worst assigned rank, linked by $\rho \ge r_{s,p}\,x_{s,p}\ \forall s \in S,\ p \in P$. It is used only in Strategy 1.
 
 ### 2.4 Hard Mathematical Constraints
-Formulate all mandatory system constraints mathematically:
 
 1. **Exact Allocation Constraint:**
    $$\sum_{p \in P} x_{s,p} = 1 \quad \forall s \in S$$
@@ -100,7 +88,7 @@ Formulate all mandatory system constraints mathematically:
    *Explanation: Every new solution must differ from each previously found allocation for at least $d$ students, where $d \ge 1$ is the minimum number of students that must receive a different project. The specification requires only $d = 1$ (at least one student differs); a larger $d$ yields more clearly distinct alternatives. If the model becomes infeasible after a cut is added, no further distinct alternatives exist and the engine reports this instead of repeating a solution.*
 
 ### 2.5 Optimization Objectives & Strategies
-All three strategies are solved subject to the same constraints (constraints 1 to 5 of Section 2.4). Only the objective changes, so differences between solutions are caused by the objective alone.
+All three strategies are solved subject to the same constraints (constraints 1 to 5 of Section 2.4). Only the objective changes, so differences between solutions are caused by the objective and the requirement to be distinct. A run produces up to $K$ alternatives ($K = 3$ by default), starting with the strategy the user selects and cycling through the others. Each solve includes no-good cuts against all earlier allocations in the run, so a later strategy returns its best allocation that differs from them. If none exists, the run stops early.
 
 - **Strategy 1: Preference-Oriented (Minimize Regret)**
   $$\max Z_{\text{pref}} = \sum_{s \in S}\sum_{p \in P} w^{\text{pref}}_{s,p}\,x_{s,p} \;-\; \mu\,\rho \;+\; \varepsilon \sum_{s \in S}\sum_{p \in P} \sigma_{s,p}\,x_{s,p}$$
@@ -112,13 +100,11 @@ All three strategies are solved subject to the same constraints (constraints 1 t
 
 - **Strategy 3: Balanced Trade-Off (Compromise)**
   $$\max Z_{\text{balanced}} = \lambda \sum_{s \in S}\sum_{p \in P} \tilde w_{s,p}\,x_{s,p} \;+\; (1-\lambda) \sum_{s \in S}\sum_{p \in P} \sigma_{s,p}\,x_{s,p}$$
-  *Explanation: A weighted sum of normalized preference satisfaction and skill fit, both on a $[0,1]$ scale per student. $\lambda = 1$ recovers Strategy 1 and $\lambda = 0$ recovers Strategy 2 (apart from the tie-breakers). A weighted sum can only reach supported Pareto-optimal points; this is discussed in Section 7.*
+  *Explanation: A weighted sum of normalized preference satisfaction and skill fit, both on a $[0,1]$ scale per student. $\lambda = 1$ recovers Strategy 1 with $\mu = 0$, and $\lambda = 0$ recovers Strategy 2 (apart from the tie-breakers). A weighted sum can only reach supported Pareto-optimal points; this is discussed in Section 7.*
 
 ---
 
 ## 3. Evaluation Indicators & Analytical Metrics
-
-Define the mathematical formulation for all evaluation metrics implemented in `app/engine/metrics.py`:
 
 ### 3.1 Feasibility Indicators
 Each check re-verifies a hard constraint of Section 2.4 on the returned solution, with $n_p = \sum_{s \in S} x_{s,p}$:
@@ -134,14 +120,13 @@ Each check re-verifies a hard constraint of Section 2.4 on the returned solution
   $$\bar{r} = \frac{1}{|S|} \sum_{s \in S} \sum_{p \in P} r_{s,p} \cdot x_{s,p}$$
 
 ### 3.3 Fairness Indicators
-*Section 6.3 of the specification mandates: rank distribution, unranked count, worst assigned rank, and ONE proposed and justified fairness indicator.*
 
 1. **Rank Distribution:** Histogram vector $[c_1, c_2, \dots, c_{|P|}, c_{\text{unranked}}]$ where $c_k$ is the number of students assigned to their $k$-th choice.
 2. **Unranked Allocation Count ($U$):** Count of students allocated outside their submitted preference list.
 3. **Worst Assigned Rank ($r_{\max}$):**
    $$r_{\max} = \max_{(s,p) : x_{s,p}=1} r_{s,p}$$
 4. **Team's Proposed Fairness Indicator (e.g., Gini Coefficient or Rank Variance):**
-   *Provide the mathematical formula, justification, and interpretation:*
+  
    $$G = \frac{\sum_{i=1}^n \sum_{j=1}^n |r_i - r_j|}{2 n \sum_{i=1}^n r_i}$$
    *The Gini coefficient measures how evenly preference outcomes are spread across the cohort, from 0 when every student gets the same rank to close to 1 when a few students do much better than the rest. It complements the mean rank and the worst rank, because two solutions can have the same mean while one gives everyone their second choice and the other splits students between first and third choices. Like the Jain's index used by Rezaeinia et al. (2022), it is bounded and does not depend on cohort size, but because it is relative it should always be read together with the mean rank.*
 
@@ -155,14 +140,14 @@ Each check re-verifies a hard constraint of Section 2.4 on the returned solution
 ## 4. Trade-Off Analysis & Solution Comparison
 
 ### 4.1 Comparative Delta Formulation
-Explain how the system computes performance deltas between Solution A and Solution B:
+
 $$\Delta \bar{\sigma} = \bar{\sigma}_B - \bar{\sigma}_A$$
 $$\Delta \bar{r} = \bar{r}_B - \bar{r}_A$$
 $$\Delta r_{\max} = r_{\max, B} - r_{\max, A}$$
 $$\Delta G = G_B - G_A$$
 
 ### 4.2 Allocation Diff & Displaced Student Identification
-Define how student re-allocations are classified:
+
 - **Changed Assignments:** $\{(s, p_A, p_B) : x_{s, p_A}^{(A)} = 1 \land x_{s, p_B}^{(B)} = 1 \land p_A \ne p_B\}$
 - **Worsened Students ($\Delta r_s > 0$):** Students whose preference rank worsened in Solution B.
 - **Improved Students ($\Delta r_s < 0$):** Students whose preference rank improved in Solution B.
@@ -171,20 +156,18 @@ Define how student re-allocations are classified:
 
 ## 5. Transparent Recommendation Rules
 
-*In accordance with Section 9 of the specification, recommendations must separate calculated evidence from advice across distinct policy priorities.*
-
 ### 5.1 Policy Priority 1: Student Preference Maximization
-- **Quantitative Selection Criterion:** Recommend the Strategy 1 solution, which maximizes total Borda satisfaction and penalizes the worst assigned rank. Among its alternatives, prefer the fewest unranked students, then the lowest mean rank, then the lowest worst rank.
+- **Quantitative Selection Criterion:** Among all alternatives in the run, recommend the one with the fewest unranked students, then the lowest mean rank, then the lowest worst rank. This is usually, but not necessarily, the Strategy 1 solution.
 - **Calculated Evidence Reported:** Rank distribution, mean rank, worst rank, unranked count and Gini coefficient. Mean skill fit and unmet soft requirements are shown alongside as the cost to businesses.
 - **Administrative Advice & Trade-Off Warning:** Use this when student satisfaction and perceived fairness matter most, for example when projects have few skill demands. Teams may be weaker, so compare their mean skill fit with Strategy 2 to see what businesses give up.
 
 ### 5.2 Policy Priority 2: Project Delivery & Technical Competence
-- **Quantitative Selection Criterion:** Recommend the Strategy 2 solution, which maximizes total skill fit. Among its alternatives, prefer the highest mean skill fit, then the fewest unmet soft requirements.
+- **Quantitative Selection Criterion:** Among all alternatives in the run, recommend the one with the highest mean skill fit, then the fewest unmet soft requirements. This is usually, but not necessarily, the Strategy 2 solution.
 - **Calculated Evidence Reported:** Mean skill fit, unmet soft requirements, mandatory-skill coverage and capacity utilization. Mean rank and unranked count are shown alongside as the cost to students.
 - **Administrative Advice & Trade-Off Warning:** Use this when project delivery matters most, for example for demanding partner projects. Students may end up far from their preferences, so compare the unranked count and worst rank with Strategy 1.
 
 ### 5.3 Policy Priority 3: Balanced & Egalitarian Compromise
-- **Quantitative Selection Criterion:** Recommend the Strategy 3 solution, which weights normalized preference and skill fit equally (λ = 0.5). Among its alternatives, prefer the lowest Gini coefficient.
+- **Quantitative Selection Criterion:** Among all alternatives in the run, recommend the one with the lowest Gini coefficient, then the lowest rank variance, then the lowest mean rank. This is usually, but not necessarily, the Strategy 3 solution, which weights normalized preference and skill fit equally (λ = 0.5).
 - **Calculated Evidence Reported:** All indicators, plus the deltas against Strategies 1 and 2 from Section 4.1. These show how much each side gives up relative to its own best solution.
 - **Administrative Advice & Trade-Off Warning:** Use this as the default when neither students nor businesses have clear priority. The result depends on λ and can only reach supported Pareto points, so it is a compromise rather than the best of both (see Section 7).
 
@@ -192,17 +175,16 @@ Define how student re-allocations are classified:
 
 ## 6. Assumptions, Boundary Conditions & Edge Cases
 
-Document all operational assumptions:
 1. **Student Submission Incompleteness:** An unranked project receives the penalty rank |P|+1 and a Borda score of 0 (Section 2.2), so it is never preferred over a ranked project.
 2. **Ties in Preferences:** Students with identical preference lists are treated symmetrically, so the solver returns one of several equally good allocations and the others are surfaced as alternatives through the no-good cuts.
 3. **Skill Levels:** A student with no declared level in a required skill scores 0 on that skill, and a project with no requirements gives every student a skill fit of 1 (Section 2.2).
-4. **Feasibility Boundaries:** Since projects may be left inactive, the problem is infeasible when no set of projects can host all students within their minimum and maximum capacities, when the locks to a project exceed its maximum capacity, or when a student is locked to a project whose mandatory skill no student meets. These are necessary conditions checked before solving; the final proof of infeasibility is the solver reporting that no solution exists.
+4. **Exact Allocation:** Every student must receive exactly one project (constraint 1 of Section 2.4). The specification also allows assigning at most one project when total capacity is insufficient, but we chose not to return partial allocations. If total capacity is smaller than the cohort, the system reports infeasibility rather than leaving some students unassigned, so the coordinator can decide whether to add capacity or relax a constraint.
+5. **Feasibility Boundaries:** Since projects may be left inactive, the problem is infeasible when no set of projects can host all students within their minimum and maximum capacities, when the locks to a project exceed its maximum capacity, or when a student is locked to a project whose mandatory skill no student meets. These are necessary conditions checked before solving; the final proof of infeasibility is the solver reporting that no solution exists.
 
 ---
 
 ## 7. Limitations & Analytical Deficiencies
 
-Critically reflect on the limitations of your analytical model:
 1. **Computational Complexity:** Solve time for an integer program can grow quickly as |S| and |P| increase, but at course scale the solver typically finishes in seconds. If a run hits the 15-second solver time limit the returned solution may not be optimal, and every additional alternative requires a full re-solve.
 2. **Linear Preference Assumptions:** The Borda score assumes the gap between a 1st and 2nd choice equals the gap between a 4th and 5th choice, which real student utilities need not follow. The weighted sum in Strategy 3 also depends on λ and can only reach supported Pareto-optimal points, so some good compromises between preference and skill fit cannot be found by it.
 3. **Individual vs. Team Synergies:** Skill fit is scored per student and averaged, so a team in which one strong student covers a skill for the others can look weaker than it is. The model also does not capture diversity requirements such as gender, nationality or language.

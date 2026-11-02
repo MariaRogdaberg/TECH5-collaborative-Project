@@ -50,7 +50,7 @@ Notably, Team A constructed `tests/test_recommendations.py` (243 lines of tests)
 |---|:---:|---|
 | `tests/test_component_integration.py` | 2 | End-to-end integration tests verifying seeding, optimization runs via the in-process contract, solution inspection, delta comparisons, fixed lock additions, reruns preserving locks, and infeasibility handling. |
 | `tests/test_contract_and_engine.py` | 5 | Verifies contract compliance: `AssignmentEngine` implements `AssignmentEngineContract`, tests input validation DTOs, execution, historical retrieval, solution comparisons, and mock contract substitutability. |
-| `tests/test_edge_cases.py` | 15 | Systematic automated test cases directly mapping to all 15 edge cases specified in Section 13 of `projectTech5.tex`. |
+| `tests/test_edge_cases.py` | 15 | Systematic automated test cases directly mapping to all 15 edge cases, including those listed in the project brief.
 | `tests/test_metrics.py` | 4 | Unit tests for Gini inequality calculation, normalized skill-fit scoring, solution indicator evaluation, and side-by-side delta metrics. |
 | `tests/test_models.py` | 4 | Domain model dataclass validation, default-safe serialization (`to_dict`, `from_dict`), and helper methods. |
 | `tests/test_persistence.py` | 3 | SQLite relational schema initialization, WAL mode verification, foreign key cascading constraints, and repository CRUD. |
@@ -61,9 +61,9 @@ Notably, Team A constructed `tests/test_recommendations.py` (243 lines of tests)
 
 ---
 
-## 4. Section 13 Edge Cases Verification Matrix
+## 4. Edge Cases Verification Matrix
 
-Section 13 of the project specification mandates robust handling of 15 specific edge cases and boundary conditions. The table below documents the system response and verifying test for each:
+The project brief requires the application to handle problematic situations predictably rather than crash. The table below documents the system response and verifying test for each:
 
 | # | Edge Case / Boundary Condition | System Handling Category | System Action & Diagnostic Behavior | Verifying Test Case |
 |---|---|---|---|---|
@@ -87,7 +87,7 @@ Section 13 of the project specification mandates robust handling of 15 specific 
 
 ## 5. Contract Compliance & Mock Substitutability Evidence
 
-A central architectural mandate from Section 10 is that Component A and Component B integrate strictly through an abstract Python interface (`AssignmentEngineContract`), allowing independent testing and mock substitution:
+A central design requirement is that Component A and Component B integrate strictly through an abstract Python interface (`AssignmentEngineContract`), allowing independent testing and mock substitution:
 
 ```python
 # Verified in tests/test_contract_and_engine.py
