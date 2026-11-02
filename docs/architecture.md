@@ -9,7 +9,7 @@ In accordance with the updated project specification (Sections 5, 7, 8, and 15),
 1. **Component A (Visualization & Recommendation Component)**:
    - Manages user workflow, cohort data inspection, CRUD interfaces, benchmark scenario seeding, role switching (Admin, Coordinator, Student Viewer), multi-solution visual side-by-side trade-off comparisons, and evidence-backed recommendations.
 2. **Component B (Assignment Engine)**:
-   - Validates input feasibility, executes mathematical Integer Linear Programming (PuLP) using the **Strategy Pattern** (`PreferenceOrientedSolver`, `SkillFitOrientedSolver`, `BalancedTradeoffSolver`), generates distinct Pareto alternatives via integer no-good cuts, evaluates multidimensional quality/fairness metrics, and captures diagnostics.
+   - Validates input feasibility, executes mathematical Integer Linear Programming (PuLP) using the **Strategy Pattern** (`PreferenceOrientedSolver`, `SkillFitOrientedSolver`, `BalancedTradeoffSolver`), generates distinct alternatives via integer no-good cuts, evaluates multidimensional quality/fairness metrics, and captures diagnostics.
 
 The two components are mediated strictly by an **internal Python component contract** (`app/contract/contract.py`), backed by a shared relational SQLite 3NF persistence layer (`app/persistence`).
 
@@ -34,7 +34,7 @@ flowchart TD
     subgraph Component_B["Component B: Assignment Engine (app/engine)"]
         SolverEngine["AssignmentEngine (implements Contract)"]
         StrategyPattern["Strategy Pattern: Preference, Skill-Fit, Balanced"]
-        PuLPSolver["PuLP ILP Solver & Pareto No-Good Cuts"]
+        PuLPSolver["PuLP ILP Solver & No-Good Cuts"]
         MetricsEngine["Analytical Indicators & Gini Fairness Engine"]
         ValidationEngine["Domain Feasibility Validator"]
     end
@@ -84,7 +84,7 @@ flowchart TD
 The Assignment Engine defines an abstract base strategy `AssignmentStrategy(abc.ABC)` with concrete subclasses:
 - `PreferenceOrientedSolver`: Maximizes student ranked preferences (assigning rank 1 awards highest utility, penalizing unranked assignments).
 - `SkillFitOrientedSolver`: Maximizes qualification fit across all required project skills.
-- `BalancedTradeoffSolver`: Combines normalized preference satisfaction and skill coverage using Pareto scalarization.
+- `BalancedTradeoffSolver`: Combines normalized preference satisfaction and skill fit as a weighted sum (λ = 0.5).
 
 ```
        +-----------------------------------+

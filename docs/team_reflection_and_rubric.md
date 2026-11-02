@@ -11,16 +11,16 @@
 
 ## 1. Collaborative Systems Delivery & Component Division
 
-To mirror professional software engineering practice, our six-member cohort split into two specialized sub-teams adhering strictly to Section 5 and Section 8 of the TECH5 project specification:
+The two teams, A and B, of three members each have completed the weekly reports separately, but in week 2 and 3 we have met up and merged together our work. We coordinated what had been done and understood more of what the other team had been working on. 
 
 ### 1.1 Team A: Visualization & Recommendation (`app/visualization/`)
-- **Web Application Architecture**: Full-stack Flask blueprint (`visualization_web`) with responsive, accessible Jinja2 templates adhering to semantic HTML5 standards.
-- **Role-Based Access Control (RBAC)**: Dynamic in-memory session switching between `Administrator` (unrestricted cohort CRUD), `Programme Coordinator` (scenario execution, lock pinning, trade-off comparison), and `Student Viewer` (read-only inspection of finalized allocations).
-- **Interactive Cohort Management**: Complete CRUD views for students, semester projects (with min/max capacity quotas and mandatory vs. optional skill matrices), and the competence catalog.
+- **Web Application Architecture**: Full-stack Flask blueprint (`visualization_web`) with Jinja2 templates.
+- **Role-Based Access Control (RBAC)**: Our features use the starter kit's session-based role switching between `Administrator` (unrestricted cohort CRUD), `Programme Coordinator` (scenario execution, lock pinning, trade-off comparison), and `Student Viewer` (read-only inspection of finalized allocations).
+- **Interactive Cohort Management**: CRUD views for semester projects (with min/max capacity quotas and mandatory vs. optional skill requirements) and the competence catalog, alongside the starter kit's student management.
 - **Decision Support & Comparison**:
   - Interactive side-by-side solution comparison controller (`/compare?sol1=...&sol2=...`) computing visual delta metrics ($\Delta$ Skill Fit, $\Delta$ Mean Rank, $\Delta$ Gini).
   - Student displacement and re-allocation tracker highlighting exactly who gained or lost rank.
-  - Interactive "Pin Lock & Re-run" workflow on solution views (`/solutions/{id}/pin-and-rerun`), allowing coordinators to lock individual student-project pairs and observe the ripple effect in real time.
+  - Interactive "Pin Lock & Re-run" workflow on solution views (`/solutions/{id}/lock-and-rerun`), allowing coordinators to lock individual student-project pairs and observe the ripple effect in real time.
 - **Transparent Recommendation UI**: Presentation separating calculated mathematical evidence from normative administrative advice across three policy priorities.
 
 ### 1.2 Team B: Assignment Engine (`app/engine/`)
@@ -35,9 +35,9 @@ To mirror professional software engineering practice, our six-member cohort spli
 
 ### 1.3 Contract-First In-Process Collaboration Protocol
 Our collaboration was governed by an agreed in-process Python contract (`app/contract/contract.py`):
-1. **Week 1 Alignment**: Both teams jointly defined shared domain models (`app/domain/models.py`), SQLite schema (`app/persistence/schema.sql`), and the abstract `AssignmentEngineContract`.
+1. **Week 1 Alignment**: Both teams studied and adopted the domain models, SQLite schema and `AssignmentEngineContract` provided in the starter kit.
 2. **Parallel Independence**: Team B worked strictly behind the contract interface, while Team A utilized `MockAssignmentEngine` (`app/contract/mocks.py`) to build, test, and style all UI views and controllers without blocking on solver completion.
-3. **In-Process Integration**: Rather than introducing network latency, HTTP serialization overhead, or distributed failure modes, the two components integrate directly in Python: Team A instantiates `solvers.AssignmentEngine()` and exchanges strongly typed DTOs (`RunRequest`, `ValidationOutcome`, `RunComparison`, `RunOutcome`).
+3. **In-Process Integration**: Rather than introducing network latency, HTTP serialization overhead, or distributed failure modes, the two components integrate directly in Python: Team A instantiates `solvers.AssignmentEngine()` and exchanges strongly typed DTOs (`RunRequest`, `ValidationOutcome`, `RunComparison`, `AssignmentRun`).
 
 ---
 
@@ -45,21 +45,35 @@ Our collaboration was governed by an agreed in-process Python contract (`app/con
 
 ### 2.1 SDLC Milestone Execution
 Our development followed an iterative, test-driven 3-week milestone roadmap:
-- **Week 1 (Architectural Design & Contract)**: Formalized domain models, 3NF database schema, `AssignmentEngineContract`, and input validation rules.
-- **Week 2 (Component Development & Mocks)**: Team B authored the ILP formulation, Borda scoring, skill-fit formulas, and metrics. Team A built web views, CRUD templates, RBAC, and comparison controllers using the mock engine.
-- **Week 3 (Full Integration, Strategy 3 & Verification)**: Connected Component A to the production `AssignmentEngine`. Integrated Strategy 3 (`BALANCED`), replaced earlier ad-hoc test suites with the professor's 50-test reference suite, resolved edge cases, and completed all project documentation.
+- **Week 1 (Architectural Design & Contract)**: Studied the starter kit and contract. Team A implemented skill and project CRUD; Team B formulated the ILP model and verified input validation.
+- **Week 2 (Component Development & Mocks)**: Team B implemented the three assignment strategies and evaluation metrics. Team A built the web interface, role-based access control, and solution comparison tools using the mock engine.
+- **Week 3 (Full Integration, Strategy 3 & Verification)**: Connected Component A to the production `AssignmentEngine`. Integrated Strategy 3 (`BALANCED`), replaced earlier ad-hoc test suites with the professor's 50-test reference suite, resolved edge cases, and completed the project documentation.
 
 ### 2.2 Git Collaboration & Branch Management
-To maintain code integrity across five active contributors:
-- Work was partitioned into feature branches (e.g. `skills-crud`, `maria-project-TODO`, `feat/comparison-and-pinning`, `merge-team-b-w1`, `week-3`, `merge-team-b-w3`).
-- Changes were integrated into `main` via reviewed Pull Requests (PR #1 through PR #8).
-- When Team A developed advanced recommendation tests (`tests/test_recommendations.py`, 243 lines), they were verified and merged in PR #7 (commit `3a31b09`). When synchronizing with the professor's reference suite in PR #8, the test configuration was cleanly reconciled without losing commit history.
+
+The six team members worked in two GitHub repositories, both forked from the course starter repository:
+- **Team A** worked in the shared repository `MariaRogdaberg/TECH5-collaborative-Project`.
+ Features were developed on separate branches (e.g. `skills-crud`, `alexnder_todo`, `week-3`) and integrated into `main` mostly through pull requests. Not all pull requests were reviewed by a second team member before merging, as we had sat together and made the code.
+- **Team B** developed the Assignment Engine in a separate fork, `JoggiLJ/TECH5-collaborative-Project`. Their work was brought into the shared repository by adding Team B's fork as a Git remote (`teamB`) and merging it on dedicated branches (`merge-team-b-w1` in week 1 and `merge-team-b-w3` in week 3, the latter via PR #8). Team B also merged Team A's work into their own fork, so the two repositories were kept in sync manually from both sides.
+
+Working in two repositories was tidy for the most part. But because both were forks of the starter repository, GitHub suggested the course repository as the target for new pull requests, which led to some pull requests being opened in the wrong place. 
+
+When Team A developed advanced recommendation tests (`tests/test_recommendations.py`, 243 lines), they were verified and merged in PR #7 (commit `3a31b09`). When synchronizing with the professor's reference suite in PR #8, the test configuration was cleanly reconciled without losing commit history.
 
 ### 2.3 Disciplined AI Pair Programming Practice
-Generative AI and agentic coding tools were used strictly as pair-programming assistants to accelerate delivery while maintaining full architectural ownership:
-- **Architecture Refactoring**: Transitioning from an over-engineered distributed microservice layout to a clean, cohesive modular monolith mediated by a Python contract.
-- **Edge Case Synthesis**: Designing test cohorts to systematically probe all 15 edge conditions mandated by Section 13.
-- **Documentation & Code Quality**: Ensuring 100% adherence to Google Python Style Guide conventions (module-only imports, type annotations, Google docstrings, and clean formatting).
+The course allows generative AI in the collaborative project, and both teams used it. We treated AI as an assistant rather than an author: every change was read, understood and tested before it was committed, following the "explain before accept" practice.
+
+**Tools.** Team A used Google Antigravity IDE and Claude.
+
+**What we used AI for:**
+- **Understanding the starter code.** AI explained how a request moves from a Flask route through the contract and repositories to the database, and how the repository classes relate to the database exercises from lectures. This was the most valuable use, because it helped us work in code we had not written ourselves.
+- **Implementing and debugging features.** AI helped draft the CRUD routes and the comparison and recommendation logic. It also diagnosed errors from the terminal, for example a missing `pulp` package caused by running tests in the conda base environment instead of the project's virtual environment.
+- **Git and GitHub.** Setting up the other team's fork as a remote, merging across the two repositories, resolving pull requests that targeted the course repository by mistake, and checking what each merge would change before running it.
+- **Review and testing.** Checking the analytical note against the code revealed several mismatches, such as recommendation rules that described a different selection logic than `recommendations.py`. An AI-assisted run through the application with invalid inputs found a crash on non-numeric input for the number of alternatives, which we then fixed.
+
+**Limitations we experienced.** AI suggestions were not always correct or complete. For example, when we asked AI to write a test that checked whether the application handled an empty skills list correctly, it produced a test that failed on that same input because it did not properly handle the data. We therefore verified every change by running `pytest` and testing the workflow in the browser.
+
+**Reflection.** AI made us faster at understanding unfamiliar code and at diagnosing problems, but it did not replace understanding.
 
 ---
 
@@ -76,18 +90,23 @@ Real-world academic allocation requires coordinator discretion (e.g. funding req
 
 ---
 
-## 4. Self-Assessment against the 100-Point Grading Rubric
+### 3.4 Lessons Learned
+- **Integrate the real engine early.** The mock engine always succeeded, so failure cases only appeared at integration. Mock fallbacks even hid real failures until we removed them.
+- **Review every pull request.** Sitting together while coding is not a substitute for a second person checking the final change.
+- **Keep documentation in step with the code.** Reviewing the analytical note against the code revealed several mismatches that had built up as the engine changed.
 
-The project is evaluated against the 8 assessment categories and weights from Section 16 of `projectTech5.tex`:
+---
+
+## 4. Self-Assessment against the 100-Point Grading Rubric
 
 | Category | Weight | Self-Score | Evidence & Justification |
 |---|:---:|:---:|---|
-| **1. Business requirements and analytical formulation** | 10% | **10 / 10** | Formal ILP model with index sets, capacity bounds, Borda preference scoring, normalized skill fit, mandatory skill constraints, and no-good integer cuts. Fully documented in Deliverable 6 (`docs/analytical_note_template.md`). |
-| **2. Object-oriented architecture and Python implementation** | 15% | **15 / 15** | Highly modular design using Strategy Pattern (`AssignmentStrategy`), Repository Pattern (`repositories.py`), Factory Pattern (`create_app`), and Abstract Interface Pattern (`AssignmentEngineContract`). 100% compliant with Google Python Style Guide. |
-| **3. Relational database design and SQL integration** | 15% | **15 / 15** | 3NF normalized SQLite schema with foreign keys (`ON DELETE CASCADE`), CHECK constraints, unique indexes, and WAL mode. Features non-trivial analytical SQL queries for capacity utilization, skill gap analysis, and cross-solution student diffs (`docs/database_design.md`). |
-| **4. Assignment Engine functionality and analytical quality** | 20% | **20 / 20** | PuLP/CBC ILP engine supporting three strategies (`PREFERENCE`, `SKILL_FIT`, `BALANCED`). Enforces mandatory skills and fixed locks, generates distinct Pareto alternatives via cuts, computes Gini coefficient, and provides structured diagnostics on infeasibility. |
-| **5. Visualization, recommendations, and interaction** | 15% | **15 / 15** | Responsive Flask web UI with RBAC role switching. Features side-by-side solution comparison with visual deltas, student displacement tracking, interactive "pin lock & re-run", and inspectable recommendations separating calculated facts from advice. |
-| **6. Component contract and end-to-end integration** | 10% | **10 / 10** | Clean abstract contract (`AssignmentEngineContract`) with strongly typed DTOs. Seamless in-process integration between `app/visualization` and `app/engine`. Verified by dedicated contract tests and full lifecycle integration tests. |
-| **7. Testing, error handling, and robustness** | 10% | **10 / 10** | 50-test automated suite (35 passed, 1 skipped, 15 xpassed; 100% functional pass rate). Systematic verification across all 15 edge cases from Section 13. Graceful handling of infeasibility and input errors. |
-| **8. Git collaboration, SDLC practice, and team process** | 5% | **5 / 5** | Well-defined 3-week SDLC roadmap, contract-first design protocol, clear separation of Team A and Team B, reviewed PRs (PR #1 through #8), and disciplined branch management. |
-| **Total** | **100%** | **100 / 100** | **Exemplary Collaborative Implementation** |
+| **1. Business requirements and analytical formulation** | 10% | **9 / 10** | The analytical note (`docs/analytical_note_template.md`) gives a complete ILP formulation with sets, parameters, five hard constraints, three objectives, evaluation indicators, recommendation rules, assumptions and limitations, and it was reviewed against the code. Weakness: λ is fixed at 0.5 and cannot be changed by the user. |
+| **2. Object-oriented architecture and Python implementation** | 15% | **12 / 15** | The engine extends the starter kit's Strategy Pattern with three concrete strategies, and Team A's features use the Repository Pattern and the abstract contract consistently. Weakness: much of the architecture was provided by the starter kit, and `routes.py` has grown to about 1,100 lines and would benefit from being split into separate modules. |
+| **3. Relational database design and SQL integration** | 15% | **11 / 15** | All CRUD features persist through the repository classes with parameterized SQL, and the app works on the normalized schema with foreign keys and CHECK constraints. Weakness: the schema and the analytical SQL queries in `docs/database_design.md` came from the starter kit and were not extended by us. Deleting a skill that projects require silently removes those requirements (`ON DELETE CASCADE`) without warning the user. |
+| **4. Assignment Engine functionality and analytical quality** | 20% | **18 / 20** | PuLP/CBC engine with three strategies (`PREFERENCE`, `SKILL_FIT`, `BALANCED`), enforcement of capacities, mandatory skills and fixed locks, distinct alternatives via no-good cuts, feasibility, efficiency and fairness indicators including a Gini coefficient, and structured infeasibility diagnostics. Weaknesses: later strategies in a run are constrained by earlier solutions, the ε term is not a strict tie-breaker in Strategy 2, and the comparison function treats unranked students differently from the indicator calculation. |
+| **5. Visualization, recommendations, and interaction** | 15% | **13 / 15** | Working CRUD for projects and skills, side-by-side comparison with deltas and changed students, lock-and-rerun from the solution view, and recommendations that separate evidence from advice across three policy priorities. Weakness: the trade-off weight λ and the number of strategies cannot be explored interactively. |
+| **6. Component contract and end-to-end integration** | 10% | **9 / 10** | Team A developed against `MockAssignmentEngine` and switched to the real engine through the contract without changing the interface. We removed the mock fallbacks so that real failures are reported instead of hidden. Weakness: integration happened late and across two repositories. |
+| **7. Testing, error handling, and robustness** | 10% | **8 / 10** | All 50 tests in the professor's reference suite pass (35 passed, 1 skipped, 15 xpassed), including all edge cases. Manual testing with invalid input found and fixed a crash on non-numeric input for the number of alternatives. Weakness: Team A's own recommendation tests were retired when the reference suite was restored, so recommendation logic is now covered only indirectly. |
+| **8. Git collaboration, SDLC practice, and team process** | 5% | **3 / 5** | Feature branches and pull requests were used throughout Team A's work. Weaknesses: the teams worked in two separate forks that had to be merged manually, some work was merged without a pull request, and not all pull requests were reviewed by a second person. |
+| **Total** | **100%** | **83 / 100** | |
