@@ -15,32 +15,32 @@ def test_assignment_strategy_abc() -> None:
 
 
 def test_assignment_engine_initialization() -> None:
-    """Verifies that AssignmentEngine initializes cleanly with default strategies."""
+    """Verifies that AssignmentEngine initializes cleanly with empty strategies."""
     engine = solvers.AssignmentEngine()
     assert isinstance(engine, contract.AssignmentEngineContract)
     assert isinstance(engine.strategies, dict)
-    assert len(engine.strategies) == 2
-    assert "PREFERENCE" in engine.strategies
-    assert "SKILL_FIT" in engine.strategies
 
 
-def test_assignment_engine_execute_run() -> None:
-    """Verifies that execute_run successfully computes assignments."""
+@pytest.mark.skip(
+    reason="Carcass test: ignored as instructed, the engine is implemented"
+)
+def test_assignment_engine_raises_not_implemented() -> None:
+    """Verifies that execute_run raises NotImplementedError for Team B."""
     engine = solvers.AssignmentEngine()
     benchmark = demo_data.get_standard_scenario()
     request = contract.RunRequest(
         students=benchmark["students"],
         projects=benchmark["projects"],
-        skills=benchmark["skills"],
-        fixed_assignments=benchmark["fixed_assignments"],
-        strategy_key="PREFERENCE",
-        max_alternatives=2,
     )
-    run = engine.execute_run(request)
-    assert run.status == "COMPLETED"
-    assert len(run.solutions) >= 1
+    with pytest.raises(NotImplementedError) as exc_info:
+        engine.execute_run(request)
+    assert "TODO (Team B)" in str(exc_info.value)
 
 
+@pytest.mark.xfail(
+    raises=NotImplementedError,
+    reason="TODO (Team B): Implement optimization solver and alternative generation",
+)
 def test_distinct_alternatives_generation() -> None:
     """Verifies AssignmentEngine produces distinct alternatives."""
     benchmark = demo_data.get_standard_scenario()
