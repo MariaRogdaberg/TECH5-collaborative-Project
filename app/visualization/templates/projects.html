@@ -67,7 +67,12 @@
                 </td>
                 {% if can_edit %}
                   <td>
-                    <a href="{{ url_for('visualization_web.edit_project_form', project_id=p.id) }}" class="btn btn-sm btn-secondary">Edit</a>
+                    <div style="display: flex; gap: 0.5rem;">
+                      <a href="{{ url_for('visualization_web.edit_project_form', project_id=p.id) }}" class="btn btn-sm btn-secondary">Edit</a>
+                      <form action="{{ url_for('visualization_web.delete_project', project_id=p.id) }}" method="POST" onsubmit="return confirm('Delete project {{ p.id }}?');">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                      </form>
+                    </div>
                   </td>
                 {% endif %}
               </tr>
